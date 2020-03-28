@@ -8,8 +8,12 @@ from scipy.linalg import logm, expm
 
 dKraus = [
     [
-        np.matrix([[0, -1j], [1j, 0]]),
+        np.matrix([[0, -1], [1, 0]]),
         np.matrix([[1, 0], [0, 1]])
+    ],
+    [
+        np.matrix([[0,1j],[1j,0]]),
+        np.matrix([[1j,0],[0,-1j]])
     ]
 
 
@@ -21,32 +25,6 @@ class Message:
         self.ier = False
         self.err = 0.0
         self.variant = 0 # variant of param for diagonal pseudo Kraus operator
-        
-
-
-def get_kraus_(U, init_env=0, sys_bits=[0], env_bits=[], nbits=2):
-    total_bits=np.array(range(nbits))
-    if env_bits==[]:
-        env_bits=[bit for bit in total_bits if bit not in sys_bits]
-    n_env_bits=len(env_bits)
-    n_sys_bits=len(sys_bits)
-    n_env_st=2**(n_env_bits)
-    n_sys_st=2**(n_sys_bits)
-
-    Ks = []
-    for i in range(n_env_st):
-        K = U[init_env*n_sys_st:(init_env+1)*n_sys_st, i*n_sys_st:(i+1)*n_sys_st]
-        Ks.append(K)
-
-    return Ks
-
-def channel_(rho0, Ks):
-    ch = np.matrix(np.zeros_like(rho0), dtype=np.complex)
-    for K in Ks:
-        ch+=K*rho0*K.H
-
-    return ch
-
 
 
 def get_iterative_kraus_op(rho_in, rho_out, variant=0):
@@ -60,27 +38,59 @@ def get_iterative_kraus_op(rho_in, rho_out, variant=0):
     # Define return values
     msg = Message()
     
-        
+
+    phase = False
+
     D0, U0 = tools.diagonalize(rho_in)
     D1, U1 = tools.diagonalize(rho_out)
     
     D0 = D0.real
     D1 = D1.real
+
+    if D0[0,0] > D0[1,1] and D1[0,0] < D1[1,1]:
+        phase = True
     
     s0 = D0[0,0]
     s1 = D1[0,0]
     
     if 1-s0 <= s1 <= s0:
         msg.ier=True
+
+        
+        
         p = (s0 - s1)/(2*s0 - 1)
+        
         
         S0 = dKraus[variant][0]
         S1 = dKraus[variant][1]
+
+        if phase==True:
+            p = 1-p
+            S0 = np.matrix([[1j, 0], [0, -1j]])
+            S1 = np.matrix([[0, -1],[1, 0]], dtype=np.complex)
+
+
         
         E0 = U1@S0@U0.H
         E1 = U1@S1@U0.H
         
         rho_out_proj = p*E0@rho_in@E0.H + (1-p)*E1@rho_in@E1.H
+        msg.err = np.linalg.norm(rho_out_proj - rho_out)
+        
+        return p, E0, E1, msg
+
+    elif s0 <= s1 <= 1-s0:
+        msg.ier=True
+        p = (s0-s1)/(2*s0-1)
+
+
+        S0 = dKraus[variant][0]
+        S1 = dKraus[variant][1]
+
+        E0 = U1@S0@U0.H
+        E1 = U1@S1@U0.H
+        
+        rho_out_proj = (1-p)*E1@rho_in@E1.H + p*E0@rho_in@E0.H
         msg.err = np.linalg.norm(rho_out_proj - rho_out)
         
         return p, E0, E1, msg

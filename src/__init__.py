@@ -13,7 +13,7 @@ def get_kraus_(U, init_env=0, sys_bits=[0], env_bits=[], nbits=2):
     Ks = []
     for i in range(n_env_st):
         K = U[init_env*n_sys_st:(init_env+1)*n_sys_st, i*n_sys_st:(i+1)*n_sys_st]
-        Ks.append(K)
+        Ks.append(np.matrix(K))
 
     return Ks
 
@@ -24,6 +24,12 @@ def channel_(rho0, Ks):
         ch+=K*rho0*K.H
 
     return ch
+
+def rho_sys_(U, rho0):
+    Ks = get_kraus_(U)
+    return channel_(rho0, Ks)
+
+
 
 def split_number(k, sysbit, nbits):
     s = -sysbit-1

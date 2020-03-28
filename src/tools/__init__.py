@@ -134,8 +134,8 @@ def diagonalize_2(rho):
 
 
 def diagonalize(rho):
-    if rho.shape[0] == 2:
-        return diagonalize_2(rho)
+    #if rho.shape[0] == 2:
+    #    return diagonalize_2(rho)
 
     D, eigenvecs = np.linalg.eig(rho)
     
@@ -223,6 +223,8 @@ def get_su2_param(U, generator=True):
         t0 = np.arccos(a)
         
         param = np.arra
+
+    return param
 
 
 def u2(param):
