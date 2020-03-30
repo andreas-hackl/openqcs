@@ -114,6 +114,25 @@ def is_density_matrix(rho, pseudo=True):
 #  
 
 
+def diag(rho):
+    v, w = np.linalg.eigh(rho)
+    
+    if v[0] > v[1]:
+        raise ValueError()
+        
+    S = np.matrix(np.diag(v))
+    U = np.matrix(w, dtype=np.complex)
+    
+    if not np.isclose(np.linalg.norm(U.H@U - Pauli[0]), 0.0):
+        raise ValueError()
+    
+    
+    dist = np.linalg.norm(rho-U@S@U.H)
+    if not np.isclose(dist, 0.0):
+        raise ValueError()
+        
+    return S, U
+
 def diagonalize_2(rho):
     if rho.shape[0] != 2:
         raise ValueError("wrong dimension")
@@ -198,7 +217,7 @@ def su2(param, generator=False):
 
 def get_su2_param(U, generator=True):
     detU = np.linalg.det(U)
-    if not np.isclose(detU.real, 1):
+    if not np.isclose(detU.real, 1, rtol=1e-3):
         raise ValueError()
     if generator:
         ###################################
