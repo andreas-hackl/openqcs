@@ -113,19 +113,20 @@ def get_iterative_kraus_op(rho_in, rho_out, variant=0):
         return p, E0, E1, msg
 
 
-def it_kraus(rho_in, rho_out):
+def it_kraus(rho_in, rho_out, phase_check=True):
     msg = {"ier": False, "err": 0.0, "phase":False}
     
     D0, U0 = tools.diag(rho_in)
     D1, U1 = tools.diag(rho_out)
     
-    if rho_in[0,0]>1/2 and rho_out[0,0]<1/2:
-        msg["phase"]=True
-        msg["ier"]=True
-        p = 1
-        E0 = np.matrix(np.eye(2))
-        E1 = np.matrix(np.eye(2))
-        return p, E0, E1, msg
+    if phase_check:
+        if rho_in[0,0]>1/2 and rho_out[0,0]<1/2:
+            msg["phase"]=True
+            msg["ier"]=True
+            p = 1
+            E0 = np.matrix(np.eye(2))
+            E1 = np.matrix(np.eye(2))
+            return p, E0, E1, msg
     
     s0 = D0[1,1]
     s1 = D1[1,1]

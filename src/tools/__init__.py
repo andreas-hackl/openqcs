@@ -133,42 +133,6 @@ def diag(rho):
         
     return S, U
 
-def diagonalize_2(rho):
-    if rho.shape[0] != 2:
-        raise ValueError("wrong dimension")
-    w, v = np.linalg.eig(rho)
-    v = np.array(v)
-    U = np.matrix([v[i,:]/np.linalg.norm(v[i,:]) for i in range(len(w))])
-    if np.linalg.norm(U.H@U - np.matrix(np.eye(U.shape[0]))) > 1e-6:
-        raise ValueError()
-    S = np.matrix(np.diag(w))
-    
-    if S[0,0]<S[1,1]:
-        X = np.matrix([[0,1],[1,0]])
-        S = X@S@X
-        U = U@X
-    
-    return S, U
-
-
-
-def diagonalize(rho):
-    #if rho.shape[0] == 2:
-    #    return diagonalize_2(rho)
-
-    D, eigenvecs = np.linalg.eig(rho)
-    
-    norms = [np.linalg.norm(v) for v in eigenvecs]
-    U = [v / np.linalg.norm(v) for v in eigenvecs]
-    U = np.matrix(np.array(U))
-    
-    S = np.matrix(np.diag(D))
-    
-    
-    if not np.isclose(np.linalg.norm(rho - U@S@U.H), 0.0):
-        raise ValueError("something went wrong, rho not diagonizable")
-        
-    return S, U
 
 #
 #   The following function are for generate SU(2) and U(2) matrices
@@ -215,7 +179,7 @@ def su2(param, generator=False):
         return np.matrix([[exp(1j*phi1)*cos(theta), exp(1j*phi2)*sin(theta)]
                         ,[-exp(-1j*phi2)*sin(theta), exp(-1j*phi1)*cos(theta)]])
 
-def get_su2_param(U, generator=True):
+def get_su2_param(U, generator=False):
     detU = np.linalg.det(U)
     if not np.isclose(detU.real, 1, rtol=1e-3):
         raise ValueError()
@@ -241,7 +205,7 @@ def get_su2_param(U, generator=True):
         t2 = np.angle(U[0,1])
         t0 = np.arccos(a)
         
-        param = np.arra
+        param = np.array([t0, t1, t2])
 
     return param
 
@@ -261,6 +225,28 @@ def u2(param):
     phi = param[0]
     su2_matrix = su2(param[1:])
     return exp(1j*phi/2)*su2_matrix
+
+def get_u2_param(U):
+    
+    if not isinstance(U, np.matrix):
+        U = np.matrix(U)
+
+    # check unitarity
+    dist = np.linalg.norm(U.H@U - np.matrix(np.eye(U.shape[0])))
+    if not np.isclose(dist, 0.0):
+        raise ValueError("Matrix not unitary, ||U^adj U - 1||_F = {}".format(dist))
+
+    # det U = e^{i \phi/2}
+
+    phi = - 1j * np.log(np.linalg.det(U))
+
+    su2matrix = np.exp(-1j*phi/2) * U
+
+    su2param = get_su2_param(su2matrix)
+
+    param = [phi] + list(su2param)
+
+    return np.array(param)
 
 
 def pseudo_random_density_matrix(n=2):
